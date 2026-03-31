@@ -1,1 +1,17 @@
+# 数据目录
 /data
+
+# Python
+__pycache__/
+
+# 虚拟环境
+.venv/
+
+# IDE
+.vscode/
+
+# 回测结果
+output/
+
+# 缓存
+.ruff_cache/

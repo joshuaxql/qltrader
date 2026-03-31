@@ -1,12 +1,18 @@
+from pathlib import Path
 import pandas as pd
 import numpy as np
-from pathlib import Path
-from qltrader import run_backtest, plot_results, order_shares, schedule
+from src.qltrader import run_backtest, plot_results, order_shares, schedule
 import warnings
+
+
+# 获取项目根目录（当前文件所在目录）
+PROJECT_ROOT = Path(__file__).resolve().parent
+
 
 warnings.filterwarnings("ignore")
 
-DATA_PATH = Path(r".\data\daily")
+# 使用项目根目录下的相对路径
+DATA_PATH = PROJECT_ROOT / "data" / "daily"
 LOOKBACK_PERIOD = 40
 THRESHOLD = 0.02
 NUM_STOCKS = 20
@@ -148,7 +154,7 @@ def backtest_profit_frequency(
 
 
 if __name__ == "__main__":
-    START_DATE = "2020-01-01"
+    START_DATE = "2023-01-01"
     END_DATE = "2026-01-01"
     CAPITAL = 1000000.0
 
@@ -170,7 +176,10 @@ if __name__ == "__main__":
     if len(results) > 0:
         results = pd.DataFrame(results)
 
-        plot_results(results, "盈利频率因子策略回测")
+        # 生成输出文件名（使用项目根目录）
+        output_filename = f"profit_freq_{START_DATE}_{END_DATE}.png"
+        output_path = PROJECT_ROOT / "output" / output_filename
+        plot_results(results, "盈利频率因子策略回测", save_path=str(output_path))
 
         print("\n" + "=" * 50)
         print(f"起始资金: {results['total_value'].iloc[0]:,.2f}")
