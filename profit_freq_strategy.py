@@ -117,10 +117,6 @@ def monthly_rebalance(context, data):
                 order_shares(sec, shares)
 
 
-def handle_data(context, data):
-    pass
-
-
 def backtest_profit_frequency(
     start_date: str, end_date: str, capital: float = 1000000.0
 ):
@@ -145,7 +141,6 @@ def backtest_profit_frequency(
         start_date=start_date,
         end_date=end_date,
         initialize=initialize,
-        handle_data=handle_data,
         capital_base=capital,
     )
 
