@@ -37,13 +37,7 @@ qltrader/
 ### 安装依赖
 
 ```bash
-pip install gm alphalens-reloaded matplotlib rich
-```
-
-### 运行示例策略
-
-```bash
-python profit_freq_strategy.py
+uv sync
 ```
 
 ### 编写自己的策略
@@ -52,8 +46,6 @@ python profit_freq_strategy.py
 适合定期调仓（如月度换仓）的策略，`handle_data` 参数可选：
 
 ```python
-from qltrader import run_backtest, order_shares, schedule, plot_results
-
 NUM_STOCKS = 30
 
 def initialize(context):
@@ -84,8 +76,6 @@ plot_results(results)
 适合需要每日判断的策略，需传入 `handle_data`：
 
 ```python
-from qltrader import run_backtest, order_target_percent, plot_results
-
 def initialize(context):
     context.set_universe(['sh600000', 'sh600001'])
 
@@ -129,7 +119,7 @@ from qltrader import run_backtest, order_shares, schedule, plot_results
 **方式三：安装为包**
 ```bash
 # 在项目根目录下
-pip install -e src/
+uv pip install -e src/
 ```
 然后可以直接使用：
 ```python
@@ -182,10 +172,4 @@ CSV文件位于 `data/daily/` 目录，文件命名规则：`sh600000.csv`（上
 
 ## 下载数据
 
-使用 `download_gm.py` 从掘金量化下载数据（需要Token）：
-
-```bash
-python download_gm.py
-```
-
-修改 `download_gm.py` 中的 `set_token("your_token")` 为你的掘金Token。
+修改 `download_gm.py` 中的 `set_token("your_token")` 为你的掘金Token，然后运行此文件从掘金量化下载数据
