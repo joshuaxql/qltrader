@@ -1,7 +1,7 @@
 [project]
 name = "qltrader"
 version = "0.1.1"
-description = "Add your description here"
+description = "A股量化回测框架，API设计参考Zipline风格。"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
