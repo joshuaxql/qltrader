@@ -15,7 +15,7 @@ from pathlib import Path
 # 添加 src 目录到 Python 路径
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from qltrader import run_backtest, plot_results, order_target_percent, schedule
+from qltrader import run_backtest, show_result, order_target_percent, schedule
 
 
 # 策略参数
@@ -115,43 +115,11 @@ if __name__ == "__main__":
         capital_base=1000000.0,  # 初始资金100万
     )
 
-    # 输出统计信息
-    print("\n" + "=" * 60)
-    print("回测结果统计")
-    print("=" * 60)
-
-    if len(results) > 0:
-        # 计算累计收益
-        total_return = (
-            results["portfolio_value"].iloc[-1] / results["portfolio_value"].iloc[0] - 1
-        ) * 100
-
-        # 计算年化收益
-        days = (results.index[-1] - results.index[0]).days
-        annual_return = (
-            ((1 + total_return / 100) ** (365 / days) - 1) * 100 if days > 0 else 0
-        )
-
-        # 最大回撤
-        cummax = results["portfolio_value"].cummax()
-        drawdown = (results["portfolio_value"] - cummax) / cummax
-        max_drawdown = drawdown.min() * 100
-
-        print(f"回测区间: {results.index[0].date()} 至 {results.index[-1].date()}")
-        print(f"初始资金: 1,000,000.00")
-        print(f"最终资金: {results['portfolio_value'].iloc[-1]:,.2f}")
-        print(f"累计收益: {total_return:.2f}%")
-        print(f"年化收益: {annual_return:.2f}%")
-        print(f"最大回撤: {max_drawdown:.2f}%")
-
-    # 绘制结果
-    output_dir = Path(__file__).parent.parent / "output"
-    output_dir.mkdir(exist_ok=True)
-
-    plot_results(
+    # 展示回测结果（包含统计信息和可视化）
+    show_result(
         results,
         title="双均线策略回测结果",
-        save_path=str(output_dir / "dual_ma_strategy.png"),
+        is_save=True,
+        output_dir="./output",
+        filename="dual_ma_strategy",
     )
-
-    print(f"\n图表已保存到: {output_dir / 'dual_ma_strategy.png'}")

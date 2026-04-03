@@ -34,7 +34,7 @@ from .scheduler import schedule
 from .utils import run_backtest, get_price
 
 # 可视化
-from .plotting import plot_results
+from .plotting import plot_results, show_result
 
 # 配置（可选导出）
 from .config import DATA_PATH
@@ -78,6 +78,7 @@ __all__ = [
     "get_price",
     # 可视化
     "plot_results",
+    "show_result",
     # 配置
     "DATA_PATH",
     # Tushare数据下载
