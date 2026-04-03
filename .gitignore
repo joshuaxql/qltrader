@@ -3,6 +3,7 @@
 
 # Python
 __pycache__/
+src/qltrader.egg-info/
 
 # 虚拟环境
 .venv/
@@ -15,3 +16,6 @@ output/
 
 # 缓存
 .ruff_cache/
+
+# 环境变量文件（包含敏感信息）
+.env

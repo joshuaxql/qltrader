@@ -3,12 +3,12 @@ name = "qltrader"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.9"
 dependencies = [
-    "gm>=3.0.183",
     "matplotlib>=3.10.8",
     "pandas>=3.0.2",
-    "rich>=14.3.3",
+    "python-dotenv>=1.0.0",
+    "tushare>=1.4.7",
 ]
 
 [[tool.uv.index]]

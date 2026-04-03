@@ -25,11 +25,21 @@ class QlTrader:
     def __init__(self):
         self.context = Context()  # 回测上下文
         self._price_data: Dict[str, pd.DataFrame] = {}  # 价格数据
+        self._daily_basic_data: Dict[str, pd.DataFrame] = {}  # 每日指标数据
+        self._moneyflow_data: Dict[str, pd.DataFrame] = {}  # 资金流向数据
         self._trade_dates: List[datetime] = []  # 交易日列表
         self._slippage = 0.002  # 滑点（0.2%）
         self._commission = 0.0003  # 手续费（0.03%）
+        self._load_extra_data = False  # 是否加载额外数据
 
-    def _load_data(self, securities: List[str], start_date: str, end_date: str):
+    def _load_data(
+        self,
+        securities: List[str],
+        start_date: str,
+        end_date: str,
+        load_daily_basic: bool = False,
+        load_moneyflow: bool = False,
+    ):
         """
         加载回测所需数据
 
@@ -39,8 +49,12 @@ class QlTrader:
             securities: 股票代码列表
             start_date: 开始日期（YYYY-MM-DD格式）
             end_date: 结束日期（YYYY-MM-DD格式）
+            load_daily_basic: 是否加载每日指标数据
+            load_moneyflow: 是否加载资金流向数据
         """
         all_dates = set()
+        self._load_extra_data = load_daily_basic or load_moneyflow
+
         for sec in securities:
             file_path = DATA_PATH / f"{sec}.csv"
             if not file_path.exists():
@@ -61,6 +75,40 @@ class QlTrader:
             self._price_data[sec] = df.reset_index(drop=True)
             all_dates.update(df["date"].tolist())
 
+            # 加载每日指标数据
+            if load_daily_basic:
+                basic_path = DATA_PATH.parent / "daily_basic" / f"{sec}.csv"
+                if basic_path.exists():
+                    basic_df = pd.read_csv(basic_path)
+                    basic_df["trade_date"] = pd.to_datetime(
+                        basic_df["trade_date"]
+                    ).dt.strftime("%Y-%m-%d")
+                    mask = (basic_df["trade_date"] >= start_date) & (
+                        basic_df["trade_date"] <= end_date
+                    )
+                    self._daily_basic_data[sec] = (
+                        basic_df[mask].copy().reset_index(drop=True)
+                    )
+                else:
+                    print(f"Warning: {sec} daily_basic data not found")
+
+            # 加载资金流向数据
+            if load_moneyflow:
+                mf_path = DATA_PATH.parent / "moneyflow" / f"{sec}.csv"
+                if mf_path.exists():
+                    mf_df = pd.read_csv(mf_path)
+                    mf_df["trade_date"] = pd.to_datetime(
+                        mf_df["trade_date"]
+                    ).dt.strftime("%Y-%m-%d")
+                    mask = (mf_df["trade_date"] >= start_date) & (
+                        mf_df["trade_date"] <= end_date
+                    )
+                    self._moneyflow_data[sec] = (
+                        mf_df[mask].copy().reset_index(drop=True)
+                    )
+                else:
+                    print(f"Warning: {sec} moneyflow data not found")
+
         # 生成交易日列表（取所有股票都有数据的日期）
         sorted_dates = sorted(list(all_dates))
         self._trade_dates = [datetime.strptime(d, "%Y-%m-%d") for d in sorted_dates]
@@ -68,7 +116,12 @@ class QlTrader:
 
     def _create_data_obj(self, current_dt: datetime):
         """创建Data对象（内部使用）"""
-        return Data(self._price_data, current_dt)
+        return Data(
+            self._price_data,
+            current_dt,
+            daily_basic_cache=self._daily_basic_data if self._load_extra_data else None,
+            moneyflow_cache=self._moneyflow_data if self._load_extra_data else None,
+        )
 
     def _should_run_scheduled(
         self, task: dict, trade_date: datetime, prev_date: Optional[datetime]

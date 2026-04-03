@@ -39,6 +39,27 @@ from .plotting import plot_results
 # 配置（可选导出）
 from .config import DATA_PATH
 
+# Tushare数据下载模块
+from .tushare_data import (
+    set_token,
+    format_code,
+    to_ts_code,
+    get_sec_type,
+    get_stock_basic,
+    get_all_stock,
+    get_index_basic,
+    get_stock_name,
+    get_index_name,
+    get_stock_industry,
+    get_daily,
+    get_daily_basic,
+    get_moneyflow,
+    download_data,
+    download_batch,
+    load_daily_data,
+    get_securities_info,
+)
+
 __all__ = [
     # 模型类
     "Position",
@@ -59,4 +80,22 @@ __all__ = [
     "plot_results",
     # 配置
     "DATA_PATH",
+    # Tushare数据下载
+    "set_token",
+    "format_code",
+    "to_ts_code",
+    "get_sec_type",
+    "get_stock_basic",
+    "get_all_stock",
+    "get_index_basic",
+    "get_stock_name",
+    "get_index_name",
+    "get_stock_industry",
+    "get_daily",
+    "get_daily_basic",
+    "get_moneyflow",
+    "download_data",
+    "download_batch",
+    "load_daily_data",
+    "get_securities_info",
 ]
