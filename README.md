@@ -36,10 +36,10 @@ qltrader/
 
 ## 快速开始
 
-### 安装依赖
+### 安装
 
 ```bash
-uv sync
+pip install qltrader
 ```
 
 ### 编写自己的策略
@@ -97,34 +97,6 @@ results = run_backtest(
 plot_results(results)
 ```
 
-### 导入方式
-
-框架位于 `src/qltrader/` 目录下，提供以下导入方式：
-
-**方式一：直接引用**
-```python
-from src.qltrader import run_backtest, plot_results, order_shares, schedule
-```
-
-**方式二：在项目中使用**
-在你的策略文件开头添加：
-```python
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from qltrader import run_backtest, order_shares, schedule, plot_results
-```
-
-**方式三：安装为包（推荐）**
-```bash
-# 在项目根目录下
-uv pip install -e src/
-```
-然后可以直接使用：
-```python
-from qltrader import run_backtest, order_shares, schedule, plot_results
-```
 
 ## API 参考
 
