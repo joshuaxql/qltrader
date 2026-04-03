@@ -166,7 +166,7 @@ def example_download_all_stocks(start_date="2024-01-01", end_date="2024-12-31"):
     fail_count = 0
     total = len(codes)
 
-    for i, code in enumerate(codes[1000:]):
+    for i, code in enumerate(codes):
         while True:
             try:
                 print(f"\n[{i + 1}/{total}] 正在下载 {code}...")
@@ -269,6 +269,4 @@ if __name__ == "__main__":
     example_download_all_stocks(
         start_date="2013-01-01", end_date="2026-01-01"
     )  # 一键下载所有股票（耗时较长）
-    """example_download_all_indices(
-        start_date="2013-01-01", end_date="2026-01-01"
-    )  # 一键下载所有指数（耗时较长）"""
+    # example_download_all_indices(start_date="2013-01-01", end_date="2026-01-01")  # 一键下载所有指数（耗时较长）
