@@ -23,8 +23,8 @@ SHORT_WINDOW = 5  # 短期均线周期
 LONG_WINDOW = 20  # 长期均线周期
 UNIVERSE = [
     "sh600000",
-    "sh600036",
-    "sh601318",
+    # "sh600036",
+    # "sh601318",
 ]  # 股票池（浦发银行、招商银行、中国平安）
 
 
@@ -77,7 +77,7 @@ def trade(context, data):
         if prev_short_ma <= prev_long_ma and short_ma > long_ma:
             if current_position == 0:
                 print(
-                    f"  金叉买入信号: {sec}, 短期MA={short_ma:.2f}, 长期MA={long_ma:.2f}"
+                    f"{context.current_dt}  金叉买入信号: {sec}, 短期MA={short_ma:.2f}, 长期MA={long_ma:.2f}"
                 )
                 # 等权买入
                 order_target_percent(context, sec, 1.0 / len(UNIVERSE))
@@ -87,7 +87,7 @@ def trade(context, data):
         elif prev_short_ma >= prev_long_ma and short_ma < long_ma:
             if current_position == 1:
                 print(
-                    f"  死叉卖出信号: {sec}, 短期MA={short_ma:.2f}, 长期MA={long_ma:.2f}"
+                    f"{context.current_dt}  死叉卖出信号: {sec}, 短期MA={short_ma:.2f}, 长期MA={long_ma:.2f}"
                 )
                 # 清仓
                 order_target_percent(context, sec, 0)
@@ -108,8 +108,8 @@ if __name__ == "__main__":
 
     # 运行回测
     results = run_backtest(
-        start_date="2020-01-01",
-        end_date="2024-12-31",
+        start_date="2024-01-01",
+        end_date="2024-07-31",
         initialize=initialize,
         handle_data=None,  # 使用 schedule 定时任务，不需要 handle_data
         capital_base=1000000.0,  # 初始资金100万

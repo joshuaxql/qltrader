@@ -19,6 +19,7 @@ def run_backtest(
     capital_base: float = 1000000.0,
     load_daily_basic: bool = False,
     load_moneyflow: bool = False,
+    load_dividend: bool = False,
 ):
     """
     运行回测（用户入口函数）
@@ -34,6 +35,7 @@ def run_backtest(
         capital_base: 初始资金（默认100万）
         load_daily_basic: 是否加载每日指标数据（PE、PB、市值等），默认False
         load_moneyflow: 是否加载资金流向数据，默认False
+        load_dividend: 是否加载分红配股数据，默认False
 
     Returns:
         pd.DataFrame: 回测结果，包含每日的日期、总资产、现金、持仓市值、持仓明细
@@ -83,7 +85,7 @@ def run_backtest(
 
     # 加载数据
     trader._load_data(
-        securities, start_date, end_date, load_daily_basic, load_moneyflow
+        securities, start_date, end_date, load_daily_basic, load_moneyflow, load_dividend
     )
 
     # 正式调用initialize

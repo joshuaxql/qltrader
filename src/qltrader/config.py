@@ -8,3 +8,6 @@ from pathlib import Path
 
 # 数据文件路径，用于存储日线数据文件（CSV格式）
 DATA_PATH = Path(r".\data\daily")
+
+# 分红数据路径
+DIVIDEND_PATH = Path(r".\data\dividend")

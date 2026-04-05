@@ -37,7 +37,7 @@ from .utils import run_backtest, get_price
 from .plotting import plot_results, show_result
 
 # 配置（可选导出）
-from .config import DATA_PATH
+from .config import DATA_PATH, DIVIDEND_PATH
 
 # Tushare数据下载模块
 from .tushare_data import (
@@ -54,8 +54,12 @@ from .tushare_data import (
     get_daily,
     get_daily_basic,
     get_moneyflow,
+    get_dividend,
     download_data,
     download_batch,
+    download_dividend,
+    download_batch_dividend,
+    download_all_stock_codes,
     load_daily_data,
     get_securities_info,
 )
@@ -81,6 +85,7 @@ __all__ = [
     "show_result",
     # 配置
     "DATA_PATH",
+    "DIVIDEND_PATH",
     # Tushare数据下载
     "set_token",
     "format_code",
@@ -95,8 +100,12 @@ __all__ = [
     "get_daily",
     "get_daily_basic",
     "get_moneyflow",
+    "get_dividend",
     "download_data",
     "download_batch",
+    "download_dividend",
+    "download_batch_dividend",
+    "download_all_stock_codes",
     "load_daily_data",
     "get_securities_info",
 ]

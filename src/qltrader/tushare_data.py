@@ -213,6 +213,55 @@ def get_all_stock() -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def download_all_stock_codes(output_dir: str = None) -> pd.DataFrame:
+    """
+    下载全部A股股票代码列表
+
+    将获取到的股票列表保存到CSV文件。
+
+    Args:
+        output_dir: 输出目录，默认为data/
+
+    Returns:
+        DataFrame包含所有股票代码、名称、行业等基本信息
+    """
+    from .config import DATA_PATH
+
+    if output_dir is None:
+        output_dir = DATA_PATH.parent
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    print("正在获取全部A股股票列表...")
+
+    # 获取全部股票（上市+退市+暂停上市）
+    stock_df = get_all_stock()
+    if stock_df.empty:
+        print("获取股票列表失败")
+        return pd.DataFrame()
+
+    print(f"共获取到 {len(stock_df)} 只股票")
+
+    # 添加项目格式代码
+    stock_df["code"] = stock_df["ts_code"].apply(
+        lambda x: f"{x.split('.')[1].lower()}{x.split('.')[0]}"
+        if "." in x
+        else x
+    )
+
+    # 重新排列列
+    cols = ["code", "ts_code", "symbol", "name", "area", "industry", "market", "list_date", "delist_date", "is_hs"]
+    existing_cols = [c for c in cols if c in stock_df.columns]
+    stock_df = stock_df[existing_cols]
+
+    # 保存到CSV
+    output_file = output_path / "all_stocks.csv"
+    stock_df.to_csv(output_file, index=False)
+    print(f"已保存到 {output_file}")
+
+    return stock_df
+
+
 def get_index_basic(market: str = "SSE") -> pd.DataFrame:
     """
     获取指数基本信息
@@ -708,6 +757,145 @@ def get_moneyflow(ts_code: str, start_date: str, end_date: str) -> pd.DataFrame:
     except Exception as e:
         print(f"获取资金流向失败 {ts_code}: {e}")
         return pd.DataFrame()
+
+
+# ============================================================
+# 分红配股数据获取
+# ============================================================
+
+
+def get_dividend(ts_code: str) -> pd.DataFrame:
+    """
+    获取分红配股数据
+
+    Args:
+        ts_code: Tushare格式股票代码
+
+    Returns:
+        DataFrame包含分红配股信息
+        字段：ts_code, end_date, ann_date, div_proc, stk_div, stk_bo_rate, stk_co_rate,
+              cash_div, cash_div_tax, record_date, ex_date(除权除息日), pay_date,
+              div_listdate, imp_ann_date, base_date, base_share
+    """
+    api = _get_api()
+    try:
+        df = api.dividend(
+            ts_code=ts_code,
+            fields=[
+                "ts_code",
+                "end_date",
+                "ann_date",
+                "div_proc",
+                "stk_div",
+                "stk_bo_rate",
+                "stk_co_rate",
+                "cash_div",
+                "cash_div_tax",
+                "record_date",
+                "ex_date",
+                "pay_date",
+                "div_listdate",
+                "imp_ann_date",
+                "base_date",
+                "base_share",
+            ],
+        )
+        return df
+    except Exception as e:
+        print(f"获取分红配股失败 {ts_code}: {e}")
+        return pd.DataFrame()
+
+
+def download_dividend(
+    code: str,
+    output_dir: str = None,
+) -> pd.DataFrame:
+    """
+    下载股票分红配股数据
+
+    Args:
+        code: 证券代码（支持项目格式或Tushare格式）
+        start_date: 开始日期 YYYYMMDD或YYYY-MM-DD
+        end_date: 结束日期 YYYYMMDD或YYYY-MM-DD
+        output_dir: 输出目录，默认为data/dividend/
+
+    Returns:
+        DataFrame包含分红配股数据
+    """
+    from .config import DIVIDEND_PATH
+
+    # 转换代码格式
+    ts_code = to_ts_code(code)
+    proj_code = format_code(ts_code)
+
+    # 设置输出目录
+    if output_dir is None:
+        output_dir = DIVIDEND_PATH
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    print(f"正在下载 {proj_code} 分红配股数据...")
+
+    # 获取分红配股数据
+    div_df = get_dividend(ts_code)
+    if div_df.empty:
+        print(f"  未获取到数据")
+        return pd.DataFrame()
+
+    # 格式化日期字段
+    # ex_date: 除权除息日（用于回测匹配）
+    div_df["ex_date"] = pd.to_datetime(
+        div_df["ex_date"], format="%Y%m%d", errors="coerce"
+    ).dt.strftime("%Y-%m-%d")
+
+    # 添加项目格式代码
+    div_df["code"] = proj_code
+
+    # 按除权除息日期排序
+    div_df = div_df.sort_values("ex_date").reset_index(drop=True)
+
+    # 保存到CSV
+    output_file = output_path / f"{proj_code}.csv"
+    div_df.to_csv(output_file, index=False)
+    print(f"  已保存 {len(div_df)} 条记录到 {output_file}")
+
+    return div_df
+
+
+def download_batch_dividend(
+    codes: List[str],
+    output_dir: str = None,
+) -> Dict[str, pd.DataFrame]:
+    """
+    批量下载多只股票分红配股数据
+
+    Args:
+        codes: 证券代码列表
+        start_date: 开始日期
+        end_date: 结束日期
+        output_dir: 输出目录
+
+    Returns:
+        字典，键为代码，值为DataFrame
+    """
+    result = {}
+    total = len(codes)
+
+    for i, code in enumerate(codes):
+        print(f"\n[{i + 1}/{total}] 处理 {code}...")
+
+        try:
+            df = download_dividend(code, output_dir)
+            if not df.empty:
+                proj_code = format_code(to_ts_code(code))
+                result[proj_code] = df
+        except Exception as e:
+            print(f"  下载失败: {e}")
+
+        # API限频控制
+        time.sleep(0.3)
+
+    return result
 
 
 # ============================================================

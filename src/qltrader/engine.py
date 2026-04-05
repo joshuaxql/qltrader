@@ -7,7 +7,7 @@ QlTrader 量化回测框架 - 回测引擎模块
 from datetime import datetime
 from typing import Dict, List, Callable, Optional
 import pandas as pd
-from .config import DATA_PATH
+from .config import DATA_PATH, DIVIDEND_PATH
 from .models import Context
 from .data import Data
 from .orders import _set_current_context
@@ -27,6 +27,7 @@ class QlTrader:
         self._price_data: Dict[str, pd.DataFrame] = {}  # 价格数据
         self._daily_basic_data: Dict[str, pd.DataFrame] = {}  # 每日指标数据
         self._moneyflow_data: Dict[str, pd.DataFrame] = {}  # 资金流向数据
+        self._dividend_data: Dict[str, pd.DataFrame] = {}  # 分红配股数据
         self._trade_dates: List[datetime] = []  # 交易日列表
         self._slippage = 0.002  # 滑点（0.2%）
         self._commission = 0.0003  # 手续费（0.03%）
@@ -39,6 +40,7 @@ class QlTrader:
         end_date: str,
         load_daily_basic: bool = False,
         load_moneyflow: bool = False,
+        load_dividend: bool = False,
     ):
         """
         加载回测所需数据
@@ -51,9 +53,10 @@ class QlTrader:
             end_date: 结束日期（YYYY-MM-DD格式）
             load_daily_basic: 是否加载每日指标数据
             load_moneyflow: 是否加载资金流向数据
+            load_dividend: 是否加载分红配股数据
         """
         all_dates = set()
-        self._load_extra_data = load_daily_basic or load_moneyflow
+        self._load_extra_data = load_daily_basic or load_moneyflow or load_dividend
 
         for sec in securities:
             file_path = DATA_PATH / f"{sec}.csv"
@@ -108,6 +111,23 @@ class QlTrader:
                     )
                 else:
                     print(f"Warning: {sec} moneyflow data not found")
+
+            # 加载分红配股数据
+            if load_dividend:
+                div_path = DIVIDEND_PATH / f"{sec}.csv"
+                if div_path.exists():
+                    div_df = pd.read_csv(div_path)
+                    div_df["trade_date"] = pd.to_datetime(
+                        div_df["trade_date"]
+                    ).dt.strftime("%Y-%m-%d")
+                    mask = (div_df["trade_date"] >= start_date) & (
+                        div_df["trade_date"] <= end_date
+                    )
+                    self._dividend_data[sec] = (
+                        div_df[mask].copy().reset_index(drop=True)
+                    )
+                else:
+                    print(f"Warning: {sec} dividend data not found")
 
         # 生成交易日列表（取所有股票都有数据的日期）
         sorted_dates = sorted(list(all_dates))
@@ -238,6 +258,9 @@ class QlTrader:
                 self._process_orders(data_obj, "close")
                 self.context._orders = []
 
+            # 处理分红配送
+            self._process_dividends(trade_date)
+
             # 更新账户市值
             prices = {}
             for sec in securities:
@@ -338,3 +361,47 @@ class QlTrader:
                         sec, trade_amount, exec_price
                     )
                     self.context.portfolio._cash += trade_value - commission
+
+    def _process_dividends(self, trade_date: datetime):
+        """
+        处理分红配送事件
+
+        在除权除息日（ex_date）处理：
+        - 现金分红（cash_div_tax）：每股分红金额 × 持股数
+        - 送转股（stk_div）：每股送转股数 × 持股数
+
+        Args:
+            trade_date: 当前交易日
+        """
+        if not self._dividend_data:
+            return
+
+        date_str = trade_date.strftime("%Y-%m-%d")
+
+        for sec, pos in self.context.portfolio.positions.positions.items():
+            if pos["amount"] <= 0:
+                continue
+
+            if sec not in self._dividend_data:
+                continue
+
+            div_df = self._dividend_data[sec]
+            div_rows = div_df[div_df["ex_date"] == date_str]
+
+            if len(div_rows) == 0:
+                continue
+
+            row = div_rows.iloc[0]
+            shares = pos["amount"]
+
+            # 现金分红：每股分红（税前）× 持股数
+            cash_div = row.get("cash_div_tax", 0)
+            if cash_div and cash_div > 0:
+                self.context.portfolio._cash += shares * cash_div
+
+            # 送转股：每股送转股数 × 持股数
+            stk_div = row.get("stk_div", 0)
+            if stk_div and stk_div > 0:
+                new_shares = int(shares * stk_div)
+                if new_shares > 0:
+                    pos["amount"] += new_shares

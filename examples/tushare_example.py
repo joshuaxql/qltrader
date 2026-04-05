@@ -10,10 +10,18 @@ Tushare数据下载使用示例
 3. 调用 set_token('your_token') 手动设置
 """
 
+import sys
+from pathlib import Path
+
+sys.path.append("./src")
+
 from qltrader import (
     set_token,
     download_data,
     download_batch,
+    download_dividend,
+    download_batch_dividend,
+    download_all_stock_codes,
     load_daily_data,
     get_securities_info,
     get_stock_basic,
@@ -24,6 +32,31 @@ from qltrader import (
 # 如需手动设置Token，可取消下行注释并替换为您的Token
 # set_token("your_tushare_token")
 # 如果已配置.env文件，模块会自动读取TUSHARE_TOKEN环境变量
+
+
+def load_stock_codes_from_csv():
+    """
+    从本地all_stocks.csv读取股票代码列表
+
+    Returns:
+        list: 股票代码列表（项目格式，如sh600000）
+    """
+    csv_path = Path("./data/all_stocks.csv")
+    if not csv_path.exists():
+        print(
+            "本地股票列表文件不存在，请先运行 example_download_all_stock_codes() 下载"
+        )
+        return []
+
+    import pandas as pd
+
+    df = pd.read_csv(csv_path)
+    # 读取项目格式的code列
+    if "code" in df.columns:
+        return df["code"].tolist()
+    else:
+        print("CSV文件中没有code列")
+        return []
 
 
 def example_download_single_stock():
@@ -147,15 +180,12 @@ def example_download_all_stocks(start_date="2024-01-01", end_date="2024-12-31"):
     print("示例6：一键下载所有A股股票数据")
     print("=" * 60)
 
-    print("\n正在获取全部A股股票列表（包括上市、退市、暂停上市）...")
-    stock_df = get_all_stock()  # 获取全部股票（上市+退市+暂停上市）
-    print(f"共获取到 {len(stock_df)} 只股票")
+    print("\n正在从本地文件读取股票列表...")
+    codes = load_stock_codes_from_csv()
+    if not codes:
+        return
 
-    # 转换为项目代码格式
-    codes = [
-        f"{row['ts_code'].split('.')[1].lower()}{row['ts_code'].split('.')[0]}"
-        for _, row in stock_df.iterrows()
-    ]
+    print(f"共获取到 {len(codes)} 只股票")
 
     print("\n开始下载所有股票数据...")
     print(f"日期范围: {start_date} 至 {end_date}")
@@ -259,6 +289,84 @@ def example_download_all_indices(start_date="2024-01-01", end_date="2024-12-31")
     print("=" * 60)
 
 
+def example_download_all_stock_codes():
+    """示例：下载全部A股股票代码列表"""
+    print("\n" + "=" * 60)
+    print("示例8：下载全部A股股票代码列表")
+    print("=" * 60)
+
+    # 下载全部股票代码列表并保存到CSV
+    stock_df = download_all_stock_codes()
+
+    if stock_df is not None and len(stock_df) > 0:
+        print(f"\n下载成功！共 {len(stock_df)} 只股票")
+        print("\n前10行数据:")
+        print(stock_df.head(10))
+
+
+def example_download_dividend_single():
+    """示例：下载单只股票分红配送数据"""
+    print("\n" + "=" * 60)
+    print("示例9：下载单只股票分红配送数据")
+    print("=" * 60)
+
+    # 下载浦发银行分红数据
+    # 分红数据包含：除权除息日、每股分红、每股送转等
+    df = download_dividend(code="sh600000")
+
+    if df is not None and len(df) > 0:
+        print(f"\n下载成功！共 {len(df)} 条记录")
+        print("\n数据列: {list(df.columns)}")
+        print("\n前5行数据:")
+        print(df.head())
+
+        # 查看有分红的记录
+        if "ex_date" in df.columns:
+            valid_div = df[df["ex_date"].notna()]
+            print(f"\n有除权除息日的记录: {len(valid_div)} 条")
+
+
+def example_download_all_dividend():
+    """示例：一键下载所有股票分红配送数据"""
+    print("\n" + "=" * 60)
+    print("示例10：一键下载所有股票分红配送数据")
+    print("=" * 60)
+
+    print("\n正在从本地文件读取股票列表...")
+    codes = load_stock_codes_from_csv()
+    if not codes:
+        return
+
+    print(f"共获取到 {len(codes)} 只股票")
+
+    print("\n开始下载所有股票分红数据...")
+    print("注意：Tushare需要至少2000积分才能调用此接口")
+
+    success_count = 0
+    fail_count = 0
+    total = len(codes)
+
+    for i, code in enumerate(codes):
+        while True:
+            try:
+                print(f"\n[{i + 1}/{total}] 正在下载 {code} 分红数据...")
+                df = download_dividend(code=code)
+                if df is not None and len(df) > 0:
+                    success_count += 1
+                else:
+                    fail_count += 1
+                break
+            except Exception as e:
+                print(f"  下载失败: {e}")
+                fail_count += 1
+
+    print("\n" + "=" * 60)
+    print("下载完成！")
+    print(f"  成功: {success_count}")
+    print(f"  失败: {fail_count}")
+    print("=" * 60)
+
+
 if __name__ == "__main__":
     # 运行示例
     # example_download_single_stock()
@@ -266,7 +374,10 @@ if __name__ == "__main__":
     # example_batch_download()
     # example_load_and_query()
     # example_get_securities_info()
-    example_download_all_stocks(
-        start_date="2013-01-01", end_date="2026-01-01"
-    )  # 一键下载所有股票（耗时较长）
+    # example_download_all_stocks(
+    #     start_date="2013-01-01", end_date="2026-01-01"
+    # )  # 一键下载所有股票（耗时较长）
     # example_download_all_indices(start_date="2013-01-01", end_date="2026-01-01")  # 一键下载所有指数（耗时较长）
+    # example_download_dividend_single()  # 下载单只股票分红数据
+    # example_download_all_stock_codes()  # 下载全部股票代码列表
+    example_download_all_dividend()  # 一键下载所有股票分红数据（耗时较长）
